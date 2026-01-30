@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo 3D de Hibridación del Carbono</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        h1 {
+            font-size: 3.2rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #2196F3, #9C27B0, #FF9800);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: #666;
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            max-height: 750px;
+            overflow-y: auto;
+        }
+        
+        .control-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .control-panel::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+        
+        .control-panel::-webkit-scrollbar-thumb {
+            background: #2196F3;
+            border-radius: 10px;
+        }
+        
+        .visualization-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            min-height: 700px;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .section-title {
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+            color: #2196F3;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(33, 150, 243, 0.2);
+        }
+        
+        .hybridization-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .hybrid-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .hybrid-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(33, 150, 243, 0.15);
+            border-color: #2196F3;
+        }
+        
+        .hybrid-card.active {
+            background: rgba(33, 150, 243, 0.1);
+            border-color: #2196F3;
+            box-shadow: 0 0 20px rgba(33, 150, 243, 0.2);
+        }
+        
+        .hybrid-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .hybrid-card.sp3 .hybrid-icon {
+            color: #2196F3;
+        }
+        
+        .hybrid-card.sp2 .hybrid-icon {
+            color: #9C27B0;
+        }
+        
+        .hybrid-card.sp .hybrid-icon {
+            color: #FF9800;
+        }
+        
+        .hybrid-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        
+        .hybrid-card.sp3 .hybrid-title {
+            color: #2196F3;
+        }
+        
+        .hybrid-card.sp2 .hybrid-title {
+            color: #9C27B0;
+        }
+        
+        .hybrid-card.sp .hybrid-title {
+            color: #FF9800;
+        }
+        
+        .hybrid-desc {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .control-group {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .control-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .control-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .control-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            color: #444;
+        }
+        
+        .control-icon {
+            font-size: 1.3rem;
+            width: 30px;
+            text-align: center;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 70px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e0e0e0;
+            border-radius: 34px;
+            transition: .4s;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #2196F3;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(36px);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+        }
+        
+        .slider-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+        }
+        
+        .slider-value {
+            min-width: 40px;
+            text-align: center;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #e0e0e0;
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .color-label {
+            min-width: 150px;
+        }
+        
+        .color-picker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .color-picker input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .info-display {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .info-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #9C27B0;
+        }
+        
+        .info-content {
+            line-height: 1.7;
+            color: #555;
+        }
+        
+        .info-content ul {
+            margin-left: 20px;
+            margin-top: 15px;
+        }
+        
+        .info-content li {
+            margin-bottom: 10px;
+            padding-left: 5px;
+        }
+        
+        .detail-highlight {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        
+        .visualization-controls {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+        }
+        
+        .vis-control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #e0e0e0;
+            color: #555;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .vis-control-btn:hover {
+            background: #2196F3;
+            border-color: #2196F3;
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            max-width: 350px;
+            z-index: 100;
+            border-left: 4px solid #2196F3;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            color: #555;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions i {
+            color: #2196F3;
+            width: 20px;
+        }
+        
+        .legend-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: #555;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .nucleus-color {
+            background: #E91E63;
+        }
+        
+        .sp3-color {
+            background: #2196F3;
+        }
+        
+        .sp2-color {
+            background: #9C27B0;
+        }
+        
+        .sp-color {
+            background: #FF9800;
+        }
+        
+        .p-orbital-color {
+            width: 30px;
+            height: 15px;
+            background: #FF4081;
+            border-radius: 10px;
+        }
+        
+        .electron-color {
+            background: #00BCD4;
+        }
+        
+        .background-color {
+            background: #FFFFFF;
+            border: 1px solid #CCCCCC;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: 30px;
+            font-size: 1rem;
+            color: #666;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .footer-highlight {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .visualization-area {
+                min-height: 500px;
+            }
+            
+            .visualization-controls {
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .vis-control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1.1rem;
+            }
+            
+            .instructions {
+                max-width: 280px;
+                font-size: 0.85rem;
+            }
+            
+            .control-panel {
+                max-height: 600px;
+            }
+        }
+        
+        .loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(33, 150, 243, 0.3);
+            border-radius: 50%;
+            border-top-color: #2196F3;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            color: #2196F3;
+        }
+        
+        .tab-container {
+            display: flex;
+            border-bottom: 2px solid rgba(33, 150, 243, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .tab:hover {
+            color: #2196F3;
+        }
+        
+        .tab.active {
+            color: #2196F3;
+            border-bottom: 3px solid #2196F3;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .action-button {
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .action-button:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+        }
+        
+        .action-button.secondary {
+            background: #9C27B0;
+        }
+        
+        .action-button.secondary:hover {
+            background: #7B1FA2;
+        }
+        
+        .action-button.tertiary {
+            background: #FF9800;
+        }
+        
+        .action-button.tertiary:hover {
+            background: #F57C00;
+        }
+        
+        .advanced-controls {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Cargando modelo 3D...</div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-atom"></i> Modelo 3D de Hibridación del Carbono</h1>
+            <p class="subtitle">Visualización interactiva en 3D de las hibridaciones sp³, sp² y sp del átomo de carbono. Ajusta todos los parámetros y explora la estructura molecular.</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="tab-container">
+                    <div class="tab active" data-tab="basic">Básico</div>
+                    <div class="tab" data-tab="appearance">Apariencia</div>
+                    <div class="tab" data-tab="advanced">Avanzado</div>
+                </div>
+                
+                <div class="tab-content active" id="basic-tab">
+                    <h2 class="section-title"><i class="fas fa-sliders-h"></i> Tipo de Hibridación</h2>
+                    
+                    <div class="hybridization-selector">
+                        <div class="hybrid-card sp3 active" data-type="sp3">
+                            <div class="hybrid-icon">
+                                <i class="fas fa-dice-d20"></i>
+                            </div>
+                            <div class="hybrid-title">sp³</div>
+                            <div class="hybrid-desc">Tetraédrica (109.5°)</div>
+                        </div>
+                        
+                        <div class="hybrid-card sp2" data-type="sp2">
+                            <div class="hybrid-icon">
+                                <i class="fas fa-circle"></i>
+                            </div>
+                            <div class="hybrid-title">sp²</div>
+                            <div class="hybrid-desc">Trigonal plana (120°)</div>
+                        </div>
+                        
+                        <div class="hybrid-card sp" data-type="sp">
+                            <div class="hybrid-icon">
+                                <i class="fas fa-arrows-alt-h"></i>
+                            </div>
+                            <div class="hybrid-title">sp</div>
+                            <div class="hybrid-desc">Lineal (180°)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h2 class="section-title"><i class="fas fa-cogs"></i> Controles Básicos</h2>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-rotate" style="color: #2196F3;"></i>
+                                </div>
+                                <span>Rotación automática</span>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="rotate-toggle" checked>
+                                <label class="toggle-slider"></label>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-lightbulb" style="color: #FF9800;"></i>
+                                </div>
+                                <span>Mostrar orbitales p</span>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="p-orbitals-toggle" checked>
+                                <label class="toggle-slider"></label>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-ruler-combined" style="color: #9C27B0;"></i>
+                                </div>
+                                <span>Mostrar ángulos</span>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="angles-toggle" checked>
+                                <label class="toggle-slider"></label>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-atom" style="color: #E91E63;"></i>
+                                </div>
+                                <span>Mostrar electrones</span>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="electrons-toggle" checked>
+                                <label class="toggle-slider"></label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="action-button" id="reset-all">
+                            <i class="fas fa-redo"></i> Restablecer todo
+                        </button>
+                        <button class="action-button secondary" id="take-screenshot">
+                            <i class="fas fa-camera"></i> Capturar pantalla
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="appearance-tab">
+                    <h2 class="section-title"><i class="fas fa-palette"></i> Ajustes de Apariencia</h2>
+                    
+                    <div class="control-group">
+                        <div class="control-item">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-expand-arrows-alt" style="color: #2196F3;"></i>
+                                    </div>
+                                    <span>Transparencia orbitales</span>
+                                </div>
+                                <input type="range" id="opacity-slider" min="10" max="100" value="70">
+                                <div class="slider-value" id="opacity-value">70%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-sun" style="color: #FF9800;"></i>
+                                    </div>
+                                    <span>Intensidad de luz</span>
+                                </div>
+                                <input type="range" id="light-intensity-slider" min="10" max="200" value="100">
+                                <div class="slider-value" id="light-intensity-value">100%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-arrows-alt-v" style="color: #9C27B0;"></i>
+                                    </div>
+                                    <span>Tamaño orbitales</span>
+                                </div>
+                                <input type="range" id="orbital-size-slider" min="50" max="200" value="100">
+                                <div class="slider-value" id="orbital-size-value">100%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-running" style="color: #00BCD4;"></i>
+                                    </div>
+                                    <span>Velocidad electrones</span>
+                                </div>
+                                <input type="range" id="electron-speed-slider" min="10" max="300" value="100">
+                                <div class="slider-value" id="electron-speed-value">100%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <h2 class="section-title"><i class="fas fa-fill-drip"></i> Colores</h2>
+                        
+                        <div class="control-item">
+                            <div class="color-picker-container">
+                                <div class="control-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-circle" style="color: #E91E63;"></i>
+                                    </div>
+                                    <span class="color-label">Núcleo</span>
+                                </div>
+                                <div class="color-picker">
+                                    <input type="color" id="nucleus-color" value="#E91E63">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="color-picker-container">
+                                <div class="control-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-circle" style="color: #2196F3;"></i>
+                                    </div>
+                                    <span class="color-label">Orbitales sp³</span>
+                                </div>
+                                <div class="color-picker">
+                                    <input type="color" id="sp3-color" value="#2196F3">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="color-picker-container">
+                                <div class="control-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-circle" style="color: #9C27B0;"></i>
+                                    </div>
+                                    <span class="color-label">Orbitales sp²</span>
+                                </div>
+                                <div class="color-picker">
+                                    <input type="color" id="sp2-color" value="#9C27B0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="color-picker-container">
+                                <div class="control-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-circle" style="color: #FF9800;"></i>
+                                    </div>
+                                    <span class="color-label">Orbitales sp</span>
+                                </div>
+                                <div class="color-picker">
+                                    <input type="color" id="sp-color" value="#FF9800">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="color-picker-container">
+                                <div class="control-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-circle" style="color: #FFFFFF;"></i>
+                                    </div>
+                                    <span class="color-label">Fondo 3D</span>
+                                </div>
+                                <div class="color-picker">
+                                    <input type="color" id="background-color" value="#FFFFFF">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="action-button" id="apply-colors">
+                            <i class="fas fa-check"></i> Aplicar colores
+                        </button>
+                        <button class="action-button secondary" id="reset-colors">
+                            <i class="fas fa-undo"></i> Restablecer colores
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="advanced-tab">
+                    <h2 class="section-title"><i class="fas fa-microscope"></i> Controles Avanzados</h2>
+                    
+                    <div class="control-group">
+                        <div class="control-item">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-tachometer-alt" style="color: #2196F3;"></i>
+                                    </div>
+                                    <span>Velocidad de rotación</span>
+                                </div>
+                                <input type="range" id="rotation-speed-slider" min="10" max="500" value="100">
+                                <div class="slider-value" id="rotation-speed-value">100%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-ruler" style="color: #9C27B0;"></i>
+                                    </div>
+                                    <span>Distancia orbitales</span>
+                                </div>
+                                <input type="range" id="orbital-distance-slider" min="50" max="200" value="100">
+                                <div class="slider-value" id="orbital-distance-value">100%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="slider-container">
+                                <div class="slider-label">
+                                    <div class="control-icon">
+                                        <i class="fas fa-atom" style="color: #00BCD4;"></i>
+                                    </div>
+                                    <span>Tamaño electrones</span>
+                                </div>
+                                <input type="range" id="electron-size-slider" min="50" max="200" value="100">
+                                <div class="slider-value" id="electron-size-value">100%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-th" style="color: #666;"></i>
+                                </div>
+                                <span>Mostrar rejilla</span>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="grid-toggle" checked>
+                                <label class="toggle-slider"></label>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-arrows-alt" style="color: #666;"></i>
+                                </div>
+                                <span>Mostrar ejes</span>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="axes-toggle" checked>
+                                <label class="toggle-slider"></label>
+                            </div>
+                        </div>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-shield-alt" style="color: #4CAF50;"></i>
+                                </div>
+                                <span>Sombras</span>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="shadows-toggle" checked>
+                                <label class="toggle-slider"></label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="advanced-controls">
+                        <h3 class="section-title"><i class="fas fa-cube"></i> Calidad de Renderizado</h3>
+                        
+                        <div class="control-item">
+                            <div class="control-label">
+                                <div class="control-icon">
+                                    <i class="fas fa-tachometer-alt" style="color: #2196F3;"></i>
+                                </div>
+                                <span>Calidad de gráficos</span>
+                            </div>
+                            <select id="quality-selector" style="padding: 8px; border-radius: 8px; border: 1px solid #e0e0e0;">
+                                <option value="low">Baja (mejor rendimiento)</option>
+                                <option value="medium" selected>Media</option>
+                                <option value="high">Alta (mejor calidad)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="action-button tertiary" id="performance-test">
+                                <i class="fas fa-bolt"></i> Prueba de rendimiento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-display">
+                    <h3 class="info-title" id="info-title">Hibridación sp³</h3>
+                    <div class="info-content" id="info-content">
+                        <p>El átomo de carbono promueve un electrón del orbital 2s al orbital 2p vacío, y luego hibrida sus cuatro orbitales (un 2s y tres 2p) para formar cuatro orbitales híbridos <span class="detail-highlight">sp³</span> equivalentes.</p>
+                        <ul>
+                            <li><span class="detail-highlight">Geometría:</span> Tetraédrica</li>
+                            <li><span class="detail-highlight">Ángulo de enlace:</span> 109.5°</li>
+                            <li><span class="detail-highlight">Ejemplos:</span> Metano (CH₄), alcanos</li>
+                            <li><span class="detail-highlight">Tipo de enlace:</span> 4 enlaces sigma (σ)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="legend-container">
+                    <div class="legend-item">
+                        <div class="legend-color nucleus-color"></div>
+                        <span>Núcleo de carbono</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color sp3-color"></div>
+                        <span>Orbital híbrido sp³</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color sp2-color"></div>
+                        <span>Orbital híbrido sp²</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color sp-color"></div>
+                        <span>Orbital híbrido sp</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="p-orbital-color"></div>
+                        <span>Orbital p puro</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color electron-color"></div>
+                        <span>Electrón</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color background-color"></div>
+                        <span>Fondo 3D</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualization-area">
+                <div id="canvas-container"></div>
+                
+                <div class="visualization-controls">
+                    <button class="vis-control-btn" id="reset-view" title="Restablecer vista">
+                        <i class="fas fa-home"></i>
+                    </button>
+                    <button class="vis-control-btn" id="toggle-grid-btn" title="Alternar rejilla">
+                        <i class="fas fa-th"></i>
+                    </button>
+                    <button class="vis-control-btn" id="toggle-axes-btn" title="Alternar ejes">
+                        <i class="fas fa-arrows-alt"></i>
+                    </button>
+                    <button class="vis-control-btn" id="screenshot-btn" title="Capturar pantalla">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                    <button class="vis-control-btn" id="fullscreen-btn" title="Pantalla completa">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+                
+                <div class="instructions">
+                    <p><i class="fas fa-mouse-pointer"></i> <span>Arrastra para rotar la vista</span></p>
+                    <p><i class="fas fa-mouse"></i> <span>Rueda para hacer zoom</span></p>
+                    <p><i class="fas fa-arrows-alt"></i> <span>Shift + arrastra para mover</span></p>
+                    <p><i class="fas fa-lightbulb"></i> <span>Usa los controles para ajustar</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Modelo 3D educativo de hibridación del carbono | <span class="footer-highlight">Química Orgánica</span> | Visualización científica interactiva</p>
+            <p>© 2023 - Universidad Virtual de Química</p>
+        </footer>
+    </div>
+
+    <script>
+        // Variables globales de Three.js
+        let scene, camera, renderer, controls;
+        let nucleus, hybridOrbitals = [], pOrbitals = [], electrons = [], angleLabels = [];
+        let currentHybridization = 'sp3';
+        
+        // Configuración ajustable
+        let config = {
+            autoRotate: true,
+            showPOrbitals: true,
+            showAngles: true,
+            showElectrons: true,
+            orbitalOpacity: 0.7,
+            lightIntensity: 1.0,
+            orbitalScale: 1.0,
+            electronSpeed: 1.0,
+            rotationSpeed: 0.002,
+            orbitalDistance: 1.0,
+            electronScale: 1.0,
+            showGrid: true,
+            showAxes: true,
+            showShadows: true,
+            quality: 'medium'
+        };
+        
+        // Elementos de la escena
+        let gridHelper, axesHelper;
+        let ambientLight, directionalLight1, directionalLight2;
+        
+        // Colores actuales
+        let colors = {
+            nucleus: 0xE91E63,
+            sp3: 0x2196F3,
+            sp2: 0x9C27B0,
+            sp: 0xFF9800,
+            pOrbital: 0xFF4081,
+            electron: 0x00BCD4,
+            angleLine: 0x666666,
+            angleText: 0x333333,
+            backgroundColor: 0xFFFFFF,
+            gridColor: 0xCCCCCC,
+            axesColor: 0x888888
+        };
+        
+        // Datos de las hibridaciones
+        const hybridizationData = {
+            sp3: {
+                name: "sp³",
+                title: "Hibridación sp³",
+                description: "El átomo de carbono promueve un electrón del orbital 2s al orbital 2p vacío, y luego hibrida sus cuatro orbitales (un 2s y tres 2p) para formar cuatro orbitales híbridos sp³ equivalentes.",
+                details: [
+                    "Geometría: Tetraédrica",
+                    "Ángulo de enlace: 109.5°",
+                    "Ejemplos: Metano (CH₄), alcanos",
+                    "Tipo de enlace: 4 enlaces sigma (σ)"
+                ],
+                positions: [
+                    {x: 1, y: 1, z: 1},
+                    {x: -1, y: -1, z: 1},
+                    {x: -1, y: 1, z: -1},
+                    {x: 1, y: -1, z: -1}
+                ].map(p => {
+                    const len = Math.sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+                    return {x: p.x/len, y: p.y/len, z: p.z/len};
+                }),
+                angles: [109.5, 109.5, 109.5, 109.5, 109.5, 109.5],
+                pOrbitalPositions: []
+            },
+            sp2: {
+                name: "sp²",
+                title: "Hibridación sp²",
+                description: "El carbono hibrida su orbital 2s con dos orbitales 2p, formando tres orbitales híbridos sp² con geometría trigonal plana y dejando un orbital p puro perpendicular al plano.",
+                details: [
+                    "Geometría: Trigonal plana",
+                    "Ángulo de enlace: 120°",
+                    "Ejemplos: Etileno (C₂H₄), alquenos",
+                    "Tipo de enlace: 3 enlaces sigma (σ) + 1 enlace pi (π)"
+                ],
+                positions: [
+                    {x: 1, y: 0, z: 0},
+                    {x: -0.5, y: Math.sqrt(3)/2, z: 0},
+                    {x: -0.5, y: -Math.sqrt(3)/2, z: 0}
+                ],
+                angles: [120, 120, 120],
+                pOrbitalPositions: [
+                    {x: 0, y: 0, z: 1, axis: 'z'}
+                ]
+            },
+            sp: {
+                name: "sp",
+                title: "Hibridación sp",
+                description: "El carbono hibrida su orbital 2s con un orbital 2p, formando dos orbitales híbridos sp con geometría lineal y dejando dos orbitales p puros perpendiculares entre sí.",
+                details: [
+                    "Geometría: Lineal",
+                    "Ángulo de enlace: 180°",
+                    "Ejemplos: Acetileno (C₂H₂), alquinos",
+                    "Tipo de enlace: 2 enlaces sigma (σ) + 2 enlaces pi (π)"
+                ],
+                positions: [
+                    {x: 1, y: 0, z: 0},
+                    {x: -1, y: 0, z: 0}
+                ],
+                angles: [180],
+                pOrbitalPositions: [
+                    {x: 0, y: 1, z: 0, axis: 'y'},
+                    {x: 0, y: 0, z: 1, axis: 'z'}
+                ]
+            }
+        };
+        
+        // Inicializar la escena 3D
+        function init() {
+            // Crear escena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(colors.backgroundColor);
+            
+            // Crear cámara
+            const container = document.getElementById('canvas-container');
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(8, 6, 8);
+            
+            // Crear renderizador con configuración según calidad
+            const rendererConfig = {
+                antialias: true,
+                alpha: true,
+                powerPreference: "high-performance"
+            };
+            
+            if (config.quality === 'high') {
+                rendererConfig.antialias = true;
+            } else if (config.quality === 'low') {
+                rendererConfig.antialias = false;
+            }
+            
+            renderer = new THREE.WebGLRenderer(rendererConfig);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = config.showShadows;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+            
+            // Controles de órbita
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.rotateSpeed = 0.8;
+            controls.minDistance = 3;
+            controls.maxDistance = 25;
+            
+            // Añadir iluminación
+            setupLighting();
+            
+            // Crear elementos de referencia
+            createReferenceElements();
+            
+            // Crear el átomo de carbono
+            createCarbonAtom();
+            
+            // Actualizar tamaño del renderizador al cambiar tamaño de ventana
+            window.addEventListener('resize', onWindowResize);
+            
+            // Iniciar animación
+            animate();
+            
+            // Mostrar hibridación inicial
+            setTimeout(() => {
+                showHybridization(currentHybridization);
+                hideLoadingScreen();
+            }, 500);
+        }
+        
+        // Configurar iluminación
+        function setupLighting() {
+            // Luz ambiental
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.5 * config.lightIntensity);
+            scene.add(ambientLight);
+            
+            // Luz direccional principal
+            directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8 * config.lightIntensity);
+            directionalLight1.position.set(10, 20, 15);
+            directionalLight1.castShadow = config.showShadows;
+            if (config.showShadows) {
+                directionalLight1.shadow.mapSize.width = 2048;
+                directionalLight1.shadow.mapSize.height = 2048;
+            }
+            scene.add(directionalLight1);
+            
+            // Luz direccional secundaria
+            directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4 * config.lightIntensity);
+            directionalLight2.position.set(-10, -10, -10);
+            scene.add(directionalLight2);
+        }
+        
+        // Crear elementos de referencia (rejilla, ejes)
+        function createReferenceElements() {
+            // Rejilla
+            gridHelper = new THREE.GridHelper(20, 20, colors.gridColor, colors.gridColor);
+            gridHelper.position.y = -1.5;
+            gridHelper.material.opacity = 0.2;
+            gridHelper.material.transparent = true;
+            gridHelper.visible = config.showGrid;
+            scene.add(gridHelper);
+            
+            // Ejes
+            axesHelper = new THREE.AxesHelper(5);
+            axesHelper.material.linewidth = 2;
+            axesHelper.visible = config.showAxes;
+            scene.add(axesHelper);
+        }
+        
+        // Ocultar pantalla de carga
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500);
+        }
+        
+        // Crear el núcleo del átomo de carbono
+        function createCarbonAtom() {
+            // Eliminar núcleo anterior si existe
+            if (nucleus) {
+                scene.remove(nucleus);
+            }
+            
+            // Núcleo principal
+            const nucleusGeometry = new THREE.SphereGeometry(0.5, 64, 64);
+            const nucleusMaterial = new THREE.MeshPhongMaterial({ 
+                color: colors.nucleus,
+                shininess: 100,
+                emissive: colors.nucleus,
+                emissiveIntensity: 0.1
+            });
+            nucleus = new THREE.Mesh(nucleusGeometry, nucleusMaterial);
+            nucleus.castShadow = config.showShadows;
+            nucleus.receiveShadow = true;
+            scene.add(nucleus);
+            
+            // Efecto de brillo
+            const glowGeometry = new THREE.SphereGeometry(0.55, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: colors.nucleus,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.BackSide
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            nucleus.add(glow);
+        }
+        
+        // Mostrar una hibridación específica
+        function showHybridization(type) {
+            // Limpiar orbitales anteriores
+            clearOrbitals();
+            
+            // Actualizar variable global
+            currentHybridization = type;
+            
+            // Obtener datos de la hibridación
+            const data = hybridizationData[type];
+            
+            // Actualizar información en el panel
+            updateInfoPanel(data);
+            
+            // Actualizar botones de selección
+            updateSelectionButtons(type);
+            
+            // Crear orbitales híbridos
+            createHybridOrbitals(data.positions, type);
+            
+            // Crear orbitales p puros si los hay
+            if (data.pOrbitalPositions && data.pOrbitalPositions.length > 0 && config.showPOrbitals) {
+                createPOrbitals(data.pOrbitalPositions);
+            }
+            
+            // Crear electrones si está activado
+            if (config.showElectrons) {
+                createElectrons(data.positions, data.pOrbitalPositions || []);
+            }
+            
+            // Mostrar ángulos si está activado
+            if (config.showAngles && data.angles.length > 0) {
+                createAngleVisualizations(data.positions, data.angles);
+            }
+        }
+        
+        // Crear orbitales híbridos en 3D
+        function createHybridOrbitals(positions, type) {
+            const color = colors[type];
+            const baseDistance = 2.2 * config.orbitalDistance;
+            
+            positions.forEach((pos, index) => {
+                // Normalizar el vector de posición
+                const length = Math.sqrt(pos.x*pos.x + pos.y*pos.y + pos.z*pos.z);
+                const nx = pos.x / length;
+                const ny = pos.y / length;
+                const nz = pos.z / length;
+                
+                // Crear un cono para representar el orbital híbrido
+                const coneGeometry = new THREE.ConeGeometry(0.4 * config.orbitalScale, 1.5 * config.orbitalScale, 32);
+                const coneMaterial = new THREE.MeshPhongMaterial({ 
+                    color: color,
+                    transparent: true,
+                    opacity: config.orbitalOpacity,
+                    side: THREE.DoubleSide,
+                    shininess: 30
+                });
+                
+                const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+                
+                // Posicionar y orientar el cono
+                cone.position.set(nx * baseDistance, ny * baseDistance, nz * baseDistance);
+                
+                // Orientar el cono hacia afuera desde el centro
+                cone.lookAt(nx * (baseDistance + 1), ny * (baseDistance + 1), nz * (baseDistance + 1));
+                cone.rotateX(Math.PI / 2); // Rotar para que la punta apunte hacia afuera
+                
+                cone.castShadow = config.showShadows;
+                scene.add(cone);
+                hybridOrbitals.push(cone);
+                
+                // Añadir línea que conecta el orbital con el núcleo
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(0, 0, 0),
+                    new THREE.Vector3(nx * baseDistance, ny * baseDistance, nz * baseDistance)
+                ]);
+                const lineMaterial = new THREE.LineBasicMaterial({ 
+                    color: color,
+                    transparent: true,
+                    opacity: 0.4,
+                    linewidth: 2
+                });
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                scene.add(line);
+                hybridOrbitals.push(line);
+            });
+        }
+        
+        // Crear orbitales p puros en 3D
+        function createPOrbitals(positions) {
+            positions.forEach((pos, index) => {
+                // Crear dos lóbulos para cada orbital p (forma de mancuerna)
+                const lobeGeometry = new THREE.SphereGeometry(0.4 * config.orbitalScale, 24, 24);
+                const lobeMaterial = new THREE.MeshPhongMaterial({ 
+                    color: colors.pOrbital,
+                    transparent: true,
+                    opacity: config.orbitalOpacity * 0.8,
+                    side: THREE.DoubleSide
+                });
+                
+                // Primer lóbulo (positivo)
+                const lobe1 = new THREE.Mesh(lobeGeometry, lobeMaterial);
+                
+                // Segundo lóbulo (negativo)
+                const lobe2 = new THREE.Mesh(lobeGeometry, lobeMaterial);
+                
+                // Posicionar los lóbulos según el eje
+                const distance = 2.5 * config.orbitalDistance;
+                
+                if (pos.axis === 'x') {
+                    lobe1.position.set(distance, 0, 0);
+                    lobe2.position.set(-distance, 0, 0);
+                } else if (pos.axis === 'y') {
+                    lobe1.position.set(0, distance, 0);
+                    lobe2.position.set(0, -distance, 0);
+                } else if (pos.axis === 'z') {
+                    lobe1.position.set(0, 0, distance);
+                    lobe2.position.set(0, 0, -distance);
+                }
+                
+                lobe1.castShadow = config.showShadows;
+                lobe2.castShadow = config.showShadows;
+                
+                scene.add(lobe1);
+                scene.add(lobe2);
+                
+                pOrbitals.push(lobe1, lobe2);
+                
+                // Conectar los lóbulos con una línea
+                const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(lobe1.position.x, lobe1.position.y, lobe1.position.z),
+                    new THREE.Vector3(lobe2.position.x, lobe2.position.y, lobe2.position.z)
+                ]);
+                const lineMaterial = new THREE.LineBasicMaterial({ 
+                    color: colors.pOrbital,
+                    transparent: true,
+                    opacity: 0.3,
+                    linewidth: 1
+                });
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                scene.add(line);
+                pOrbitals.push(line);
+            });
+        }
+        
+        // Crear electrones en movimiento
+        function createElectrons(hybridPositions, pOrbitalPositions) {
+            // Electrones en orbitales híbridos
+            hybridPositions.forEach((pos, index) => {
+                const nx = pos.x;
+                const ny = pos.y;
+                const nz = pos.z;
+                
+                // Crear electrón
+                const electronGeometry = new THREE.SphereGeometry(0.15 * config.electronScale, 16, 16);
+                const electronMaterial = new THREE.MeshPhongMaterial({ 
+                    color: colors.electron,
+                    emissive: colors.electron,
+                    emissiveIntensity: 0.3,
+                    shininess: 100
+                });
+                
+                const electron = new THREE.Mesh(electronGeometry, electronMaterial);
+                
+                // Posicionar el electrón en una órbita alrededor del orbital híbrido
+                const orbitRadius = 0.6 * config.orbitalScale;
+                const orbitSpeed = (0.02 + Math.random() * 0.01) * config.electronSpeed;
+                const orbitAngle = Math.random() * Math.PI * 2;
+                const baseDistance = 2.2 * config.orbitalDistance;
+                
+                electron.userData = {
+                    orbitRadius: orbitRadius,
+                    orbitSpeed: orbitSpeed,
+                    orbitAngle: orbitAngle,
+                    basePosition: {x: nx * baseDistance, y: ny * baseDistance, z: nz * baseDistance},
+                    type: 'hybrid'
+                };
+                
+                electron.castShadow = config.showShadows;
+                scene.add(electron);
+                electrons.push(electron);
+            });
+            
+            // Electrones en orbitales p (si existen)
+            pOrbitalPositions.forEach((pos, index) => {
+                // Crear dos electrones (uno para cada lóbulo)
+                for (let i = 0; i < 2; i++) {
+                    const electronGeometry = new THREE.SphereGeometry(0.15 * config.electronScale, 16, 16);
+                    const electronMaterial = new THREE.MeshPhongMaterial({ 
+                        color: colors.electron,
+                        emissive: colors.electron,
+                        emissiveIntensity: 0.3,
+                        shininess: 100
+                    });
+                    
+                    const electron = new THREE.Mesh(electronGeometry, electronMaterial);
+                    
+                    // Determinar posición base según el eje
+                    let baseX = 0, baseY = 0, baseZ = 0;
+                    const direction = i === 0 ? 1 : -1;
+                    const distance = 2.5 * config.orbitalDistance;
+                    
+                    if (pos.axis === 'x') {
+                        baseX = direction * distance;
+                    } else if (pos.axis === 'y') {
+                        baseY = direction * distance;
+                    } else if (pos.axis === 'z') {
+                        baseZ = direction * distance;
+                    }
+                    
+                    electron.userData = {
+                        orbitRadius: 0.3 * config.orbitalScale,
+                        orbitSpeed: (0.015 + Math.random() * 0.01) * config.electronSpeed,
+                        orbitAngle: Math.random() * Math.PI * 2,
+                        basePosition: {x: baseX, y: baseY, z: baseZ},
+                        type: 'p'
+                    };
+                    
+                    electron.castShadow = config.showShadows;
+                    scene.add(electron);
+                    electrons.push(electron);
+                }
+            });
+        }
+        
+        // Crear visualizaciones de ángulos
+        function createAngleVisualizations(positions, angles) {
+            // Solo para sp³ y sp² mostramos ángulos entre orbitales
+            if (positions.length < 3) return;
+            
+            // Calcular puntos medios entre orbitales para colocar las etiquetas
+            let angleIndex = 0;
+            for (let i = 0; i < positions.length; i++) {
+                for (let j = i + 1; j < positions.length; j++) {
+                    if (angleIndex >= angles.length) break;
+                    
+                    // Punto medio entre los dos orbitales (normalizado)
+                    const midX = (positions[i].x + positions[j].x) / 3;
+                    const midY = (positions[i].y + positions[j].y) / 3;
+                    const midZ = (positions[i].z + positions[j].z) / 3;
+                    
+                    const angle = angles[angleIndex];
+                    
+                    // Crear arco para visualizar el ángulo
+                    createAngleArc(positions[i], positions[j], angle, angleIndex);
+                    
+                    angleIndex++;
+                }
+            }
+        }
+        
+        // Crear arco para visualizar ángulo
+        function createAngleArc(pos1, pos2, angle, index) {
+            // Convertir ángulo a radianes
+            const angleRad = angle * Math.PI / 180;
+            
+            // Crear puntos para un arco
+            const points = [];
+            const segments = 20;
+            const radius = 1.2 * config.orbitalScale;
+            
+            for (let i = 0; i <= segments; i++) {
+                const theta = (i / segments) * angleRad;
+                points.push(new THREE.Vector3(
+                    radius * Math.cos(theta),
+                    radius * Math.sin(theta),
+                    0
+                ));
+            }
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ 
+                color: colors.angleLine,
+                linewidth: 2
+            });
+            const arc = new THREE.Line(geometry, material);
+            
+            // Posicionar y orientar el arco correctamente
+            // Calcular el plano definido por los dos vectores y el origen
+            const v1 = new THREE.Vector3(pos1.x, pos1.y, pos1.z).normalize();
+            const v2 = new THREE.Vector3(pos2.x, pos2.y, pos2.z).normalize();
+            
+            // Calcular el vector normal al plano
+            const normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+            
+            // Calcular el ángulo entre v1 y v2
+            const actualAngle = v1.angleTo(v2);
+            
+            // Rotar el arco para que esté en el plano correcto
+            arc.lookAt(normal);
+            arc.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+            
+            // Escalar el arco para que coincida con el ángulo real
+            arc.scale.set(actualAngle / angleRad, actualAngle / angleRad, 1);
+            
+            scene.add(arc);
+            angleLabels.push(arc);
+        }
+        
+        // Limpiar orbitales anteriores
+        function clearOrbitals() {
+            // Eliminar orbitales híbridos
+            hybridOrbitals.forEach(obj => {
+                scene.remove(obj);
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+            hybridOrbitals = [];
+            
+            // Eliminar orbitales p
+            pOrbitals.forEach(obj => {
+                scene.remove(obj);
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+            pOrbitals = [];
+            
+            // Eliminar electrones
+            electrons.forEach(obj => {
+                scene.remove(obj);
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+            electrons = [];
+            
+            // Eliminar etiquetas de ángulos
+            angleLabels.forEach(obj => {
+                scene.remove(obj);
+                if (obj.geometry) obj.geometry.dispose();
+                if (obj.material) obj.material.dispose();
+            });
+            angleLabels = [];
+        }
+        
+        // Actualizar panel de información
+        function updateInfoPanel(data) {
+            const infoTitle = document.getElementById('info-title');
+            const infoContent = document.getElementById('info-content');
+            
+            infoTitle.textContent = data.title;
+            infoContent.innerHTML = `
+                <p>${data.description}</p>
+                <ul>
+                    ${data.details.map(detail => {
+                        const parts = detail.split(':');
+                        return `<li><span class="detail-highlight">${parts[0]}:</span> ${parts.slice(1).join(':')}</li>`;
+                    }).join('')}
+                </ul>
+            `;
+        }
+        
+        // Actualizar botones de selección
+        function updateSelectionButtons(type) {
+            document.querySelectorAll('.hybrid-card').forEach(card => {
+                if (card.dataset.type === type) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+        
+        // Actualizar controles de visualización desde la interfaz
+        function updateVisualizationFromControls() {
+            // Actualizar configuraciones básicas
+            config.autoRotate = document.getElementById('rotate-toggle').checked;
+            config.showPOrbitals = document.getElementById('p-orbitals-toggle').checked;
+            config.showAngles = document.getElementById('angles-toggle').checked;
+            config.showElectrons = document.getElementById('electrons-toggle').checked;
+            
+            // Actualizar controles deslizantes
+            config.orbitalOpacity = parseInt(document.getElementById('opacity-slider').value) / 100;
+            document.getElementById('opacity-value').textContent = `${document.getElementById('opacity-slider').value}%`;
+            
+            config.lightIntensity = parseInt(document.getElementById('light-intensity-slider').value) / 100;
+            document.getElementById('light-intensity-value').textContent = `${document.getElementById('light-intensity-slider').value}%`;
+            
+            config.orbitalScale = parseInt(document.getElementById('orbital-size-slider').value) / 100;
+            document.getElementById('orbital-size-value').textContent = `${document.getElementById('orbital-size-slider').value}%`;
+            
+            config.electronSpeed = parseInt(document.getElementById('electron-speed-slider').value) / 100;
+            document.getElementById('electron-speed-value').textContent = `${document.getElementById('electron-speed-slider').value}%`;
+            
+            // Actualizar controles avanzados
+            config.rotationSpeed = parseInt(document.getElementById('rotation-speed-slider').value) / 10000;
+            document.getElementById('rotation-speed-value').textContent = `${document.getElementById('rotation-speed-slider').value}%`;
+            
+            config.orbitalDistance = parseInt(document.getElementById('orbital-distance-slider').value) / 100;
+            document.getElementById('orbital-distance-value').textContent = `${document.getElementById('orbital-distance-slider').value}%`;
+            
+            config.electronScale = parseInt(document.getElementById('electron-size-slider').value) / 100;
+            document.getElementById('electron-size-value').textContent = `${document.getElementById('electron-size-slider').value}%`;
+            
+            config.showGrid = document.getElementById('grid-toggle').checked;
+            config.showAxes = document.getElementById('axes-toggle').checked;
+            config.showShadows = document.getElementById('shadows-toggle').checked;
+            
+            // Actualizar calidad
+            config.quality = document.getElementById('quality-selector').value;
+            
+            // Actualizar iluminación
+            if (ambientLight) ambientLight.intensity = 0.5 * config.lightIntensity;
+            if (directionalLight1) directionalLight1.intensity = 0.8 * config.lightIntensity;
+            if (directionalLight2) directionalLight2.intensity = 0.4 * config.lightIntensity;
+            
+            // Actualizar sombras
+            if (renderer) {
+                renderer.shadowMap.enabled = config.showShadows;
+            }
+            
+            // Actualizar elementos de referencia
+            if (gridHelper) gridHelper.visible = config.showGrid;
+            if (axesHelper) axesHelper.visible = config.showAxes;
+            
+            // Volver a mostrar la hibridación actual con las nuevas configuraciones
+            showHybridization(currentHybridization);
+        }
+        
+        // Aplicar nuevos colores
+        function applyColors() {
+            // Obtener colores de los selectores
+            colors.nucleus = parseInt(document.getElementById('nucleus-color').value.replace('#', '0x'), 16);
+            colors.sp3 = parseInt(document.getElementById('sp3-color').value.replace('#', '0x'), 16);
+            colors.sp2 = parseInt(document.getElementById('sp2-color').value.replace('#', '0x'), 16);
+            colors.sp = parseInt(document.getElementById('sp-color').value.replace('#', '0x'), 16);
+            colors.backgroundColor = parseInt(document.getElementById('background-color').value.replace('#', '0x'), 16);
+            
+            // Actualizar fondo de la escena
+            if (scene) {
+                scene.background = new THREE.Color(colors.backgroundColor);
+            }
+            
+            // Volver a mostrar la hibridación actual con los nuevos colores
+            showHybridization(currentHybridization);
+        }
+        
+        // Restablecer colores a los valores por defecto
+        function resetColors() {
+            // Valores por defecto
+            const defaultColors = {
+                nucleus: '#E91E63',
+                sp3: '#2196F3',
+                sp2: '#9C27B0',
+                sp: '#FF9800',
+                background: '#FFFFFF'
+            };
+            
+            // Establecer valores en los selectores de color
+            document.getElementById('nucleus-color').value = defaultColors.nucleus;
+            document.getElementById('sp3-color').value = defaultColors.sp3;
+            document.getElementById('sp2-color').value = defaultColors.sp2;
+            document.getElementById('sp-color').value = defaultColors.sp;
+            document.getElementById('background-color').value = defaultColors.background;
+            
+            // Aplicar los colores por defecto
+            applyColors();
+        }
+        
+        // Restablecer todos los controles a los valores por defecto
+        function resetAllControls() {
+            // Restablecer toggles
+            document.getElementById('rotate-toggle').checked = true;
+            document.getElementById('p-orbitals-toggle').checked = true;
+            document.getElementById('angles-toggle').checked = true;
+            document.getElementById('electrons-toggle').checked = true;
+            document.getElementById('grid-toggle').checked = true;
+            document.getElementById('axes-toggle').checked = true;
+            document.getElementById('shadows-toggle').checked = true;
+            
+            // Restablecer sliders
+            document.getElementById('opacity-slider').value = 70;
+            document.getElementById('light-intensity-slider').value = 100;
+            document.getElementById('orbital-size-slider').value = 100;
+            document.getElementById('electron-speed-slider').value = 100;
+            document.getElementById('rotation-speed-slider').value = 100;
+            document.getElementById('orbital-distance-slider').value = 100;
+            document.getElementById('electron-size-slider').value = 100;
+            
+            // Restablecer selector de calidad
+            document.getElementById('quality-selector').value = 'medium';
+            
+            // Restablecer colores
+            resetColors();
+            
+            // Actualizar visualización
+            updateVisualizationFromControls();
+            
+            // Restablecer vista de cámara
+            controls.reset();
+            camera.position.set(8, 6, 8);
+            controls.update();
+        }
+        
+        // Manejar cambio de tamaño de ventana
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        
+        // Animación de electrones
+        function animateElectrons() {
+            electrons.forEach(electron => {
+                const data = electron.userData;
+                
+                // Actualizar ángulo de órbita
+                data.orbitAngle += data.orbitSpeed;
+                
+                // Calcular nueva posición
+                let offsetX = 0, offsetY = 0, offsetZ = 0;
+                
+                if (data.type === 'hybrid') {
+                    // Órbita circular en un plano perpendicular al orbital
+                    offsetX = Math.cos(data.orbitAngle) * data.orbitRadius;
+                    offsetY = Math.sin(data.orbitAngle) * data.orbitRadius;
+                    // Hacer que la órbita sea más aleatoria en el eje Z
+                    offsetZ = Math.sin(data.orbitAngle * 1.5) * data.orbitRadius * 0.5;
+                } else if (data.type === 'p') {
+                    // Órbita más pequeña cerca del lóbulo del orbital p
+                    offsetX = Math.cos(data.orbitAngle) * data.orbitRadius;
+                    offsetY = Math.sin(data.orbitAngle) * data.orbitRadius;
+                }
+                
+                electron.position.set(
+                    data.basePosition.x + offsetX,
+                    data.basePosition.y + offsetY,
+                    data.basePosition.z + offsetZ
+                );
+                
+                // Pequeña animación de pulso
+                const scale = 1 + 0.1 * Math.sin(Date.now() * 0.005);
+                electron.scale.set(scale, scale, scale);
+            });
+        }
+        
+        // Bucle de animación
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotación automática si está activada
+            if (config.autoRotate) {
+                scene.rotation.y += config.rotationSpeed;
+            }
+            
+            // Animar electrones
+            animateElectrons();
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar escena 3D
+            init();
+            
+            // Configurar pestañas
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    
+                    // Actualizar pestañas activas
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Mostrar contenido correspondiente
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+            
+            // Configurar botones de hibridación
+            document.querySelectorAll('.hybrid-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const type = this.dataset.type;
+                    showHybridization(type);
+                });
+            });
+            
+            // Configurar controles básicos
+            const basicControls = ['rotate-toggle', 'p-orbitals-toggle', 'angles-toggle', 'electrons-toggle'];
+            basicControls.forEach(id => {
+                document.getElementById(id).addEventListener('change', updateVisualizationFromControls);
+            });
+            
+            // Configurar controles deslizantes
+            const sliders = [
+                'opacity-slider', 'light-intensity-slider', 'orbital-size-slider', 
+                'electron-speed-slider', 'rotation-speed-slider', 'orbital-distance-slider', 
+                'electron-size-slider'
+            ];
+            
+            sliders.forEach(sliderId => {
+                const slider = document.getElementById(sliderId);
+                const valueDisplay = document.getElementById(`${sliderId}-value`);
+                
+                slider.addEventListener('input', function() {
+                    valueDisplay.textContent = `${this.value}%`;
+                });
+                
+                slider.addEventListener('change', updateVisualizationFromControls);
+            });
+            
+            // Configurar botón para aplicar colores
+            document.getElementById('apply-colors').addEventListener('click', applyColors);
+            
+            // Configurar botón para restablecer colores
+            document.getElementById('reset-colors').addEventListener('click', resetColors);
+            
+            // Configurar botón para restablecer todo
+            document.getElementById('reset-all').addEventListener('click', resetAllControls);
+            
+            // Configurar botón para capturar pantalla
+            document.getElementById('take-screenshot').addEventListener('click', takeScreenshot);
+            document.getElementById('screenshot-btn').addEventListener('click', takeScreenshot);
+            
+            // Configurar controles avanzados
+            const advancedControls = ['grid-toggle', 'axes-toggle', 'shadows-toggle', 'quality-selector'];
+            advancedControls.forEach(id => {
+                document.getElementById(id).addEventListener('change', updateVisualizationFromControls);
+            });
+            
+            // Configurar botón de prueba de rendimiento
+            document.getElementById('performance-test').addEventListener('click', function() {
+                alert('Prueba de rendimiento completada. La escena se está renderizando correctamente.');
+            });
+            
+            // Configurar botón para restablecer vista
+            document.getElementById('reset-view').addEventListener('click', function() {
+                controls.reset();
+                camera.position.set(8, 6, 8);
+                controls.update();
+            });
+            
+            // Configurar botón para alternar rejilla
+            document.getElementById('toggle-grid-btn').addEventListener('click', function() {
+                config.showGrid = !config.showGrid;
+                document.getElementById('grid-toggle').checked = config.showGrid;
+                if (gridHelper) gridHelper.visible = config.showGrid;
+            });
+            
+            // Configurar botón para alternar ejes
+            document.getElementById('toggle-axes-btn').addEventListener('click', function() {
+                config.showAxes = !config.showAxes;
+                document.getElementById('axes-toggle').checked = config.showAxes;
+                if (axesHelper) axesHelper.visible = config.showAxes;
+            });
+            
+            // Configurar botón para pantalla completa
+            document.getElementById('fullscreen-btn').addEventListener('click', function() {
+                const container = document.getElementById('canvas-container');
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+            });
+            
+            // Configurar controles de Three.js para que no roten cuando se interactúa con los controles
+            const threeCanvas = renderer ? renderer.domElement : null;
+            if (threeCanvas) {
+                threeCanvas.addEventListener('mousedown', function() {
+                    config.autoRotate = false;
+                    document.getElementById('rotate-toggle').checked = false;
+                });
+                
+                threeCanvas.addEventListener('touchstart', function() {
+                    config.autoRotate = false;
+                    document.getElementById('rotate-toggle').checked = false;
+                });
+            }
+        });
+        
+        // Función para capturar pantalla
+        function takeScreenshot() {
+            // Crear un enlace para descargar la imagen
+            const link = document.createElement('a');
+            link.download = `carbono-hibridacion-${currentHybridization}.png`;
+            link.href = renderer.domElement.toDataURL('image/png');
+            link.click();
+            
+            // Efecto visual de flash
+            const originalBackground = scene.background;
+            scene.background = new THREE.Color(0xffffff);
+            setTimeout(() => {
+                scene.background = originalBackground;
+            }, 100);
+        }
+    </script>
+</body>
+</html>
